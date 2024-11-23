@@ -1,12 +1,12 @@
 package datasource
 
 import (
-	"os"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"testing"
 )
 
 func BenchmarkPromInstantUnmarshal(b *testing.B) {
-	data, err := os.ReadFile("testdata/instant_response.json")
+	data, err := fsproxy.ReadFile("testdata/instant_response.json")
 	if err != nil {
 		b.Fatalf("error while reading file: %s", err)
 	}

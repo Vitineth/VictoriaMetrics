@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"flag"
 	"fmt"
-	"os"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -525,7 +525,7 @@ func mustLoadRollupResultCacheKeyPrefix(path string) {
 		rollupResultCacheKeyPrefix.Store(newRollupResultCacheKeyPrefix())
 		return
 	}
-	data, err := os.ReadFile(path)
+	data, err := fsproxy.ReadFile(path)
 	if err != nil {
 		logger.Errorf("cannot load %s: %s; reset rollupResult cache", path, err)
 		rollupResultCacheKeyPrefix.Store(newRollupResultCacheKeyPrefix())

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -2060,7 +2060,7 @@ func getPartNames(pws []*partWrapper) []string {
 
 func mustReadPartNames(partsFile, smallPartsPath, bigPartsPath string) ([]string, []string) {
 	if fs.IsPathExist(partsFile) {
-		data, err := os.ReadFile(partsFile)
+		data, err := fsproxy.ReadFile(partsFile)
 		if err != nil {
 			logger.Panicf("FATAL: cannot read %q: %s", partsFile, err)
 		}

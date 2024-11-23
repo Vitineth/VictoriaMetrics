@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"math"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -1548,11 +1548,11 @@ func (tb *Table) CreateSnapshotAt(dstDir string) error {
 
 	var err error
 	srcDir := tb.path
-	srcDir, err = filepath.Abs(srcDir)
+	srcDir, err = fsproxy.Abs(srcDir)
 	if err != nil {
 		return fmt.Errorf("cannot obtain absolute dir for %q: %w", srcDir, err)
 	}
-	dstDir, err = filepath.Abs(dstDir)
+	dstDir, err = fsproxy.Abs(dstDir)
 	if err != nil {
 		return fmt.Errorf("cannot obtain absolute dir for %q: %w", dstDir, err)
 	}
@@ -1611,7 +1611,7 @@ func mustWritePartNames(pws []*partWrapper, dstDir string) {
 
 func mustReadPartNames(partsFile, srcDir string) []string {
 	if fs.IsPathExist(partsFile) {
-		data, err := os.ReadFile(partsFile)
+		data, err := fsproxy.ReadFile(partsFile)
 		if err != nil {
 			logger.Panicf("FATAL: cannot read %q: %s", partsFile, err)
 		}

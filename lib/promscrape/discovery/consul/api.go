@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"net/http"
 	"os"
 	"strconv"
@@ -114,7 +115,7 @@ func GetToken(token *promauth.Secret) (string, error) {
 		return token.String(), nil
 	}
 	if tokenFile := os.Getenv("CONSUL_HTTP_TOKEN_FILE"); tokenFile != "" {
-		data, err := os.ReadFile(tokenFile)
+		data, err := fsproxy.ReadFile(tokenFile)
 		if err != nil {
 			return "", fmt.Errorf("cannot read consul token file %q; probably, `token` arg is missing in `consul_sd_config`? error: %w", tokenFile, err)
 		}

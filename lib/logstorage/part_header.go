@@ -3,7 +3,6 @@ package logstorage
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -67,7 +66,7 @@ func (ph *partHeader) mustReadMetadata(partPath string) {
 	ph.reset()
 
 	metadataPath := filepath.Join(partPath, metadataFilename)
-	metadata, err := os.ReadFile(metadataPath)
+	metadata, err := fsproxy.ReadFile(metadataPath)
 	if err != nil {
 		logger.Panicf("FATAL: cannot read %q: %s", metadataPath, err)
 	}

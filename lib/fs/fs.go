@@ -2,6 +2,7 @@ package fs
 
 import (
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"io"
 	"os"
 	"path/filepath"
@@ -70,7 +71,7 @@ func MustWriteAtomic(path string, data []byte, canOverwrite bool) {
 	MustWriteSync(tmpPath, data)
 
 	// Atomically move the temporary file from tmpPath to path.
-	if err := os.Rename(tmpPath, path); err != nil {
+	if err := fsproxy.Rename(tmpPath, path); err != nil {
 		// do not call MustRemoveAll(tmpPath) here, so the user could inspect
 		// the file contents during investigation of the issue.
 		logger.Panicf("FATAL: cannot move temporary file %q to %q: %s", tmpPath, path, err)
@@ -78,7 +79,7 @@ func MustWriteAtomic(path string, data []byte, canOverwrite bool) {
 
 	// Sync the containing directory, so the file is guaranteed to appear in the directory.
 	// See https://www.quora.com/When-should-you-fsync-the-containing-directory-in-addition-to-the-file-itself
-	absPath, err := filepath.Abs(path)
+	absPath, err := fsproxy.Abs(path)
 	if err != nil {
 		logger.Panicf("FATAL: cannot obtain absolute path to %q: %s", path, err)
 	}
@@ -114,7 +115,7 @@ func MustMkdirFailIfExist(path string) {
 }
 
 func mustMkdirSync(path string) {
-	if err := os.MkdirAll(path, 0755); err != nil {
+	if err := fsproxy.MkdirAll(path, 0755); err != nil {
 		logger.Panicf("FATAL: cannot create directory: %s", err)
 	}
 	// Sync the parent directory, so the created directory becomes visible
@@ -132,7 +133,7 @@ func RemoveDirContents(dir string) {
 		// The path doesn't exist, so nothing to remove.
 		return
 	}
-	d, err := os.Open(dir)
+	d, err := fsproxy.Open(dir)
 	if err != nil {
 		logger.Panicf("FATAL: cannot open dir: %s", err)
 	}
@@ -153,7 +154,7 @@ func RemoveDirContents(dir string) {
 }
 
 // MustClose must close the given file f.
-func MustClose(f *os.File) {
+func MustClose(f *fsproxy.ProxyFile) {
 	fname := f.Name()
 	if err := f.Close(); err != nil {
 		logger.Panicf("FATAL: cannot close %q: %s", fname, err)
@@ -162,7 +163,7 @@ func MustClose(f *os.File) {
 
 // MustFileSize returns file size for the given path.
 func MustFileSize(path string) uint64 {
-	fi, err := os.Stat(path)
+	fi, err := fsproxy.Stat(path)
 	if err != nil {
 		logger.Panicf("FATAL: cannot stat %q: %s", path, err)
 	}
@@ -174,7 +175,7 @@ func MustFileSize(path string) uint64 {
 
 // IsPathExist returns whether the given path exists.
 func IsPathExist(path string) bool {
-	if _, err := os.Stat(path); err != nil {
+	if _, err := fsproxy.Stat(path); err != nil {
 		if os.IsNotExist(err) {
 			return false
 		}
@@ -218,7 +219,7 @@ var atomicDirRemoveCounter = func() *atomic.Uint64 {
 
 // MustReadDir reads directory entries at the given dir.
 func MustReadDir(dir string) []os.DirEntry {
-	des, err := os.ReadDir(dir)
+	des, err := fsproxy.ReadDir(dir)
 	if err != nil {
 		logger.Panicf("FATAL: cannot read directory contents: %s", err)
 	}
@@ -257,7 +258,7 @@ func MustHardLinkFiles(srcDir, dstDir string) {
 		fn := de.Name()
 		srcPath := filepath.Join(srcDir, fn)
 		dstPath := filepath.Join(dstDir, fn)
-		if err := os.Link(srcPath, dstPath); err != nil {
+		if err := fsproxy.Link(srcPath, dstPath); err != nil {
 			logger.Panicf("FATAL: cannot link files: %s", err)
 		}
 	}
@@ -272,7 +273,7 @@ func MustSymlinkRelative(srcPath, dstPath string) {
 	if err != nil {
 		logger.Panicf("FATAL: cannot make relative path for srcPath=%q: %s", srcPath, err)
 	}
-	if err := os.Symlink(srcPathRel, dstPath); err != nil {
+	if err := fsproxy.Link(srcPathRel, dstPath); err != nil {
 		logger.Panicf("FATAL: cannot make a symlink: %s", err)
 	}
 }
@@ -295,12 +296,12 @@ func MustCopyDirectory(srcPath, dstPath string) {
 
 // MustCopyFile copies the file from srcPath to dstPath.
 func MustCopyFile(srcPath, dstPath string) {
-	src, err := os.Open(srcPath)
+	src, err := fsproxy.Open(srcPath)
 	if err != nil {
 		logger.Panicf("FATAL: cannot open srcPath: %s", err)
 	}
 	defer MustClose(src)
-	dst, err := os.Create(dstPath)
+	dst, err := fsproxy.Create(dstPath)
 	if err != nil {
 		logger.Panicf("FATAL: cannot create dstPath: %s", err)
 	}
@@ -341,7 +342,7 @@ func MustWriteData(w filestream.WriteCloser, data []byte) {
 
 // MustCreateFlockFile creates FlockFilename file in the directory dir
 // and returns the handler to the file.
-func MustCreateFlockFile(dir string) *os.File {
+func MustCreateFlockFile(dir string) *fsproxy.ProxyFile {
 	flockFilepath := filepath.Join(dir, FlockFilename)
 	f, err := createFlockFile(flockFilepath)
 	if err != nil {

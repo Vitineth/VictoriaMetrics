@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"os"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"path/filepath"
 
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs"
@@ -83,7 +83,7 @@ func (ph *partHeader) MustReadMetadata(partPath string) {
 
 	// Read ph fields from metadata.
 	metadataPath := filepath.Join(partPath, metadataFilename)
-	metadata, err := os.ReadFile(metadataPath)
+	metadata, err := fsproxy.ReadFile(metadataPath)
 	if err != nil {
 		logger.Panicf("FATAL: cannot read %q: %s", metadataPath, err)
 	}

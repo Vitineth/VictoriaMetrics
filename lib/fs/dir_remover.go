@@ -1,7 +1,7 @@
 package fs
 
 import (
-	"os"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"strings"
 	"time"
 
@@ -42,7 +42,7 @@ func MustRemoveAll(path string) {
 var dirRemoverWG syncwg.WaitGroup
 
 func tryRemoveAll(path string) bool {
-	err := os.RemoveAll(path)
+	err := fsproxy.RemoveAll(path)
 	if err == nil || isStaleNFSFileHandleError(err) {
 		// Make sure the parent directory doesn't contain references
 		// to the current directory.

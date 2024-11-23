@@ -2,7 +2,6 @@ package cgroup
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -23,11 +22,11 @@ func getStatGeneric(statName, sysfsPrefix, cgroupPath, cgroupGrepLine string) (i
 
 func getFileContents(statName, sysfsPrefix, cgroupPath, cgroupGrepLine string) (string, error) {
 	filepath := path.Join(sysfsPrefix, statName)
-	data, err := os.ReadFile(filepath)
+	data, err := fsproxy.ReadFile(filepath)
 	if err == nil {
 		return string(data), nil
 	}
-	cgroupData, err := os.ReadFile(cgroupPath)
+	cgroupData, err := fsproxy.ReadFile(cgroupPath)
 	if err != nil {
 		return "", err
 	}
@@ -36,7 +35,7 @@ func getFileContents(statName, sysfsPrefix, cgroupPath, cgroupGrepLine string) (
 		return "", fmt.Errorf("cannot find cgroup path for %q in %q: %w", cgroupGrepLine, cgroupPath, err)
 	}
 	filepath = path.Join(sysfsPrefix, subPath, statName)
-	data, err = os.ReadFile(filepath)
+	data, err = fsproxy.ReadFile(filepath)
 	if err != nil {
 		return "", err
 	}

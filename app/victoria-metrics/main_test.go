@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"io"
 	"log"
 	"math/rand"
@@ -376,7 +377,7 @@ func readIn(readFor string, insertTime time.Time) []test {
 		if filepath.Ext(path) != ".json" {
 			return nil
 		}
-		b, err := os.ReadFile(path)
+		b, err := fsproxy.ReadFile(path)
 		if err != nil {
 			panic(fmt.Errorf("BUG: cannot read %s: %s", path, err))
 		}

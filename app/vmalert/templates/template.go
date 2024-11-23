@@ -16,6 +16,7 @@ package templates
 import (
 	"errors"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	htmlTpl "html/template"
 	"io"
 	"math"
@@ -28,8 +29,6 @@ import (
 	"sync"
 	textTpl "text/template"
 	"time"
-
-	"github.com/bmatcuk/doublestar/v4"
 
 	"github.com/VictoriaMetrics/VictoriaMetrics/app/vmalert/datasource"
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/formatutil"
@@ -60,7 +59,7 @@ func Load(pathPatterns []string, overwrite bool) error {
 	var err error
 	tmpl := newTemplate()
 	for _, tp := range pathPatterns {
-		p, err := doublestar.FilepathGlob(tp)
+		p, err := fsproxy.Glob(tp)
 		if err != nil {
 			return fmt.Errorf("failed to retrieve a template glob %q: %w", tp, err)
 		}

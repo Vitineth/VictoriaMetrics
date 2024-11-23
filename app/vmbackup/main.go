@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -176,7 +177,7 @@ func newSrcFS() (*fslocal.FS, error) {
 	snapshotPath := filepath.Join(*storageDataPath, "snapshots", *snapshotName)
 
 	// Verify the snapshot exists.
-	f, err := os.Open(snapshotPath)
+	f, err := fsproxy.Open(snapshotPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open snapshot at %q: %w", snapshotPath, err)
 	}
@@ -215,11 +216,11 @@ func hasFilepathPrefix(path, prefix string) bool {
 		return false
 	}
 	path = path[len("fs://"):]
-	pathAbs, err := filepath.Abs(path)
+	pathAbs, err := fsproxy.Abs(path)
 	if err != nil {
 		return false
 	}
-	prefixAbs, err := filepath.Abs(prefix)
+	prefixAbs, err := fsproxy.Abs(prefix)
 	if err != nil {
 		return false
 	}

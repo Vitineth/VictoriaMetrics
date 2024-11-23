@@ -3,8 +3,8 @@ package notifier
 import (
 	"crypto/md5"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"net/url"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -106,7 +106,7 @@ func (cfg *Config) UnmarshalYAML(unmarshal func(any) error) error {
 }
 
 func parseConfig(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
+	data, err := fsproxy.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("error reading config file: %w", err)
 	}
@@ -122,7 +122,7 @@ func parseConfig(path string) (*Config, error) {
 		}
 		return nil, fmt.Errorf("unknown fields in %s", strings.Join(keys, ", "))
 	}
-	absPath, err := filepath.Abs(path)
+	absPath, err := fsproxy.Abs(path)
 	if err != nil {
 		return nil, fmt.Errorf("cannot obtain abs path for %q: %w", path, err)
 	}

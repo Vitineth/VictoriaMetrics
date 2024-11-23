@@ -4,9 +4,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 )
 
@@ -43,7 +43,7 @@ func TLSConfig(certFile, keyFile, caFile, serverName string, insecureSkipVerify 
 
 	var rootCAs *x509.CertPool
 	if caFile != "" {
-		pem, err := os.ReadFile(caFile)
+		pem, err := fsproxy.ReadFile(caFile)
 		if err != nil {
 			return nil, fmt.Errorf("cannot read `ca_file` %q: %w", caFile, err)
 		}

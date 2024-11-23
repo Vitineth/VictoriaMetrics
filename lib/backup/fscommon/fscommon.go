@@ -2,6 +2,7 @@ package fscommon
 
 import (
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,7 +16,7 @@ import (
 // All the appended filepaths will have dir prefix.
 // The returned paths have local OS-specific directory separators.
 func AppendFiles(dst []string, dir string) ([]string, error) {
-	d, err := os.Open(dir)
+	d, err := fsproxy.Open(dir)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open directory: %w", err)
 	}
@@ -26,7 +27,7 @@ func AppendFiles(dst []string, dir string) ([]string, error) {
 	return dst, err
 }
 
-func appendFilesInternal(dst []string, d *os.File) ([]string, error) {
+func appendFilesInternal(dst []string, d *fsproxy.ProxyFile) ([]string, error) {
 	dir := d.Name()
 	dfi, err := d.Stat()
 	if err != nil {

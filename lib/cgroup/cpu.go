@@ -2,6 +2,7 @@ package cgroup
 
 import (
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"os"
 	"runtime"
 	"strconv"
@@ -84,7 +85,7 @@ func getCPUStat(statName string) (int64, error) {
 
 func getOnlineCPUCount() float64 {
 	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/685#issuecomment-674423728
-	data, err := os.ReadFile("/sys/devices/system/cpu/online")
+	data, err := fsproxy.ReadFile("/sys/devices/system/cpu/online")
 	if err != nil {
 		return -1
 	}

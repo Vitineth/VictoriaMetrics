@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"flag"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"log"
 	"log/syslog"
 	"math/rand"
@@ -58,7 +59,7 @@ func main() {
 
 	for _, sourceFile := range sourceFiles {
 		log.Printf("sourceFile: %s", sourceFile)
-		f, err := os.Open(*logsPath + "/" + sourceFile)
+		f, err := fsproxy.Open(*logsPath + "/" + sourceFile)
 		if err != nil {
 			panic(err)
 		}

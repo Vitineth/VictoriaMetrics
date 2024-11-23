@@ -187,7 +187,7 @@ YwXfJbKUZnJlv9XplwR7Dw==
 )
 
 func mustCreateFile(path, contents string) {
-	if err := os.WriteFile(path, []byte(contents), 0600); err != nil {
+	if err := fsproxy.WriteFile(path, []byte(contents), 0600); err != nil {
 		panic(fmt.Errorf("cannot create file %q with %d bytes contents: %w", path, len(contents), err))
 	}
 }

@@ -1,9 +1,11 @@
+//go:build !js
+
 package fs
 
 import (
 	"flag"
 	"fmt"
-	"os"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"sync"
 	"sync/atomic"
 
@@ -162,7 +164,7 @@ func MustOpenReaderAt(path string) *ReaderAt {
 // NewReaderAt takes ownership for f, so it shouldn't be closed by the caller.
 //
 // MustClose must be called on the returned ReaderAt when it is no longer needed.
-func NewReaderAt(f *os.File) *ReaderAt {
+func NewReaderAt(f *fsproxy.ProxyFile) *ReaderAt {
 	mr := newMmapReaderFromFile(f)
 	var r ReaderAt
 	r.path = f.Name()
@@ -171,19 +173,19 @@ func NewReaderAt(f *os.File) *ReaderAt {
 }
 
 type mmapReader struct {
-	f        *os.File
+	f        *fsproxy.ProxyFile
 	mmapData []byte
 }
 
 func newMmapReaderFromPath(path string) *mmapReader {
-	f, err := os.Open(path)
+	f, err := fsproxy.Open(path)
 	if err != nil {
 		logger.Panicf("FATAL: cannot open file for reading: %s", err)
 	}
 	return newMmapReaderFromFile(f)
 }
 
-func newMmapReaderFromFile(f *os.File) *mmapReader {
+func newMmapReaderFromFile(f *fsproxy.ProxyFile) *mmapReader {
 	var mmapData []byte
 	if !*disableMmap {
 		fi, err := f.Stat()
@@ -222,7 +224,7 @@ func (mr *mmapReader) mustClose() {
 	readersCount.Dec()
 }
 
-func mmapFile(f *os.File, size int64) ([]byte, error) {
+func mmapFile(f *fsproxy.ProxyFile, size int64) ([]byte, error) {
 	if size == 0 {
 		return nil, nil
 	}

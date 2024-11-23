@@ -2,10 +2,10 @@ package fscore
 
 import (
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -44,7 +44,7 @@ func ReadFileOrHTTP(path string) ([]byte, error) {
 		}
 		return data, nil
 	}
-	data, err := os.ReadFile(path)
+	data, err := fsproxy.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read %q: %w", path, err)
 	}

@@ -3,6 +3,7 @@ package persistentqueue
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"io"
 	"os"
 	"path/filepath"
@@ -645,7 +646,7 @@ func (mi *metainfo) WriteToFile(path string) error {
 	if err != nil {
 		return fmt.Errorf("cannot marshal persistent queue metainfo %#v: %w", mi, err)
 	}
-	if err := os.WriteFile(path, data, 0600); err != nil {
+	if err := fsproxy.WriteFile(path, data, 0600); err != nil {
 		return fmt.Errorf("cannot write persistent queue metainfo to %q: %w", path, err)
 	}
 	fs.MustSyncPath(path)
@@ -654,7 +655,7 @@ func (mi *metainfo) WriteToFile(path string) error {
 
 func (mi *metainfo) ReadFromFile(path string) error {
 	mi.Reset()
-	data, err := os.ReadFile(path)
+	data, err := fsproxy.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return err

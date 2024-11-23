@@ -194,7 +194,7 @@ groups:
 
 func writeToFile(t *testing.T, file, b string) {
 	t.Helper()
-	err := os.WriteFile(file, []byte(b), 0644)
+	err := fsproxy.WriteFile(file, []byte(b), 0644)
 	if err != nil {
 		t.Fatal(err)
 	}

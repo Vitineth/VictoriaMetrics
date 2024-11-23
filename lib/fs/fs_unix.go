@@ -4,6 +4,7 @@ package fs
 
 import (
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"os"
 
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
@@ -34,8 +35,8 @@ func mustSyncPath(path string) {
 	}
 }
 
-func createFlockFile(flockFile string) (*os.File, error) {
-	flockF, err := os.Create(flockFile)
+func createFlockFile(flockFile string) (*fsproxy.ProxyFile, error) {
+	flockF, err := fsproxy.Create(flockFile)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create lock file %q: %w", flockFile, err)
 	}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -49,7 +50,7 @@ func (ph *partHeader) Reset() {
 
 func (ph *partHeader) readMinDedupInterval(partPath string) error {
 	filePath := filepath.Join(partPath, "min_dedup_interval")
-	data, err := os.ReadFile(filePath)
+	data, err := fsproxy.ReadFile(filePath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// The minimum dedup interval may not exist for old parts.
@@ -142,7 +143,7 @@ func (ph *partHeader) MustReadMetadata(partPath string) {
 			logger.Panicf("FATAL: cannot parse metadata from %q: %s", partPath, err)
 		}
 	} else {
-		metadata, err := os.ReadFile(metadataPath)
+		metadata, err := fsproxy.ReadFile(metadataPath)
 		if err != nil {
 			logger.Panicf("FATAL: cannot read %q: %s", metadataPath, err)
 		}

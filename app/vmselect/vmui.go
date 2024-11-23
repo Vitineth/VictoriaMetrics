@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"net/http"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -97,9 +97,9 @@ func collectDashboardsSettings(path string) ([]byte, error) {
 			continue
 		}
 		filePath := filepath.Join(path, filename)
-		f, err := os.ReadFile(filePath)
+		f, err := fsproxy.ReadFile(filePath)
 		if err != nil {
-			// There is no need to add more context to the returned error, since os.ReadFile() adds enough context.
+			// There is no need to add more context to the returned error, since fsproxy.OsReadFile() adds enough context.
 			return nil, err
 		}
 		var ds dashboardSettings

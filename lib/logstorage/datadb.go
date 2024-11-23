@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"os"
 	"path/filepath"
 	"sort"
 	"sync"
@@ -1082,7 +1081,7 @@ func mustWritePartNames(path string, smallPartNames, bigPartNames []string) {
 
 func mustReadPartNames(path string) []string {
 	partNamesPath := filepath.Join(path, partsFilename)
-	data, err := os.ReadFile(partNamesPath)
+	data, err := fsproxy.ReadFile(partNamesPath)
 	if err != nil {
 		logger.Panicf("FATAL: cannot read %s: %s", partNamesPath, err)
 	}

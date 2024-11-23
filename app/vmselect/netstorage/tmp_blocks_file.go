@@ -2,6 +2,7 @@ package netstorage
 
 import (
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"os"
 	"path/filepath"
 	"sync"
@@ -58,7 +59,7 @@ var (
 type tmpBlocksFile struct {
 	buf []byte
 
-	f *os.File
+	f *fsproxy.ProxyFile
 	r *fs.ReaderAt
 
 	offset uint64
@@ -120,7 +121,7 @@ func (tbf *tmpBlocksFile) WriteBlockRefData(b []byte) (tmpBlockAddr, error) {
 
 	// Slow path: flush the data from tbf.buf to file.
 	if tbf.f == nil {
-		f, err := os.CreateTemp(tmpBlocksDir, "")
+		f, err := fsproxy.CreateTemp(tmpBlocksDir, "")
 		if err != nil {
 			return addr, err
 		}

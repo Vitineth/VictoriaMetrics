@@ -7,10 +7,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -79,7 +79,7 @@ func newAPIWatcher(apiServer string, ac *promauth.Config, sdc *SDConfig, swcFunc
 	namespaces := sdc.Namespaces.Names
 	if len(namespaces) == 0 {
 		if sdc.Namespaces.OwnNamespace {
-			namespace, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+			namespace, err := fsproxy.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 			if err != nil {
 				return nil, fmt.Errorf("cannot determine namespace for the current pod according to `own_namespace: true` option in kubernetes_sd_config: %w", err)
 			}

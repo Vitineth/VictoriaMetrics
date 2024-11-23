@@ -177,7 +177,7 @@ consul_sd_configs:
 
 func writeToFile(t *testing.T, file, b string) {
 	t.Helper()
-	checkErr(t, os.WriteFile(file, []byte(b), 0644))
+	checkErr(t, fsproxy.WriteFile(file, []byte(b), 0644))
 }
 
 func checkErr(t *testing.T, err error) {

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"io"
 	"os"
 	"sync"
@@ -58,7 +59,7 @@ var (
 
 // Reader implements buffered file reader.
 type Reader struct {
-	f  *os.File
+	f  *fsproxy.ProxyFile
 	br *bufio.Reader
 	st streamTracker
 }
@@ -89,7 +90,7 @@ func OpenReaderAt(path string, offset int64, nocache bool) (*Reader, error) {
 //
 // If nocache is set, then the reader doesn't pollute OS page cache.
 func MustOpen(path string, nocache bool) *Reader {
-	f, err := os.Open(path)
+	f, err := fsproxy.Open(path)
 	if err != nil {
 		logger.Panicf("FATAL: cannot open file: %s", err)
 	}
@@ -149,20 +150,20 @@ func (r *Reader) Read(p []byte) (int, error) {
 }
 
 type statReader struct {
-	*os.File
+	*fsproxy.ProxyFile
 }
 
 func (sr *statReader) Read(p []byte) (int, error) {
 	startTime := time.Now()
 	readCallsReal.Inc()
-	n, err := sr.File.Read(p)
+	n, err := sr.ProxyFile.Read(p)
 	d := time.Since(startTime).Seconds()
 	readDuration.Add(d)
 	readBytesReal.Add(n)
 	return n, err
 }
 
-func getBufioReader(f *os.File) *bufio.Reader {
+func getBufioReader(f *fsproxy.ProxyFile) *bufio.Reader {
 	sr := &statReader{f}
 	v := brPool.Get()
 	if v == nil {
@@ -181,7 +182,7 @@ var brPool sync.Pool
 
 // Writer implements buffered file writer.
 type Writer struct {
-	f  *os.File
+	f  *fsproxy.ProxyFile
 	bw *bufio.Writer
 	st streamTracker
 }
@@ -197,7 +198,7 @@ func (w *Writer) Path() string {
 //
 // If nocache is set, the writer doesn't pollute OS page cache.
 func OpenWriterAt(path string, offset int64, nocache bool) (*Writer, error) {
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
+	f, err := fsproxy.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -217,14 +218,14 @@ func OpenWriterAt(path string, offset int64, nocache bool) (*Writer, error) {
 //
 // If nocache is set, the writer doesn't pollute OS page cache.
 func MustCreate(path string, nocache bool) *Writer {
-	f, err := os.Create(path)
+	f, err := fsproxy.Create(path)
 	if err != nil {
 		logger.Panicf("FATAL: cannot create file %q: %s", path, err)
 	}
 	return newWriter(f, nocache)
 }
 
-func newWriter(f *os.File, nocache bool) *Writer {
+func newWriter(f *fsproxy.ProxyFile, nocache bool) *Writer {
 	w := &Writer{
 		f:  f,
 		bw: getBufioWriter(f),
@@ -238,9 +239,12 @@ func newWriter(f *os.File, nocache bool) *Writer {
 
 // MustClose syncs the underlying file to storage and then closes it.
 func (w *Writer) MustClose() {
+	logger.Infof("trying to flush file %+v", w.f.Name())
 	if err := w.bw.Flush(); err != nil {
+		logger.Infof("this definitely didn't work")
 		logger.Panicf("FATAL: cannot flush buffered data to file %q: %s", w.f.Name(), err)
 	}
+	logger.Infof("this is called later")
 	putBufioWriter(w.bw)
 	w.bw = nil
 
@@ -303,20 +307,20 @@ func (w *Writer) MustFlush(isSync bool) {
 }
 
 type statWriter struct {
-	*os.File
+	*fsproxy.ProxyFile
 }
 
 func (sw *statWriter) Write(p []byte) (int, error) {
 	startTime := time.Now()
 	writeCallsReal.Inc()
-	n, err := sw.File.Write(p)
+	n, err := sw.ProxyFile.Write(p)
 	d := time.Since(startTime).Seconds()
 	writeDuration.Add(d)
 	writtenBytesReal.Add(n)
 	return n, err
 }
 
-func getBufioWriter(f *os.File) *bufio.Writer {
+func getBufioWriter(f *fsproxy.ProxyFile) *bufio.Writer {
 	sw := &statWriter{f}
 	v := bwPool.Get()
 	if v == nil {

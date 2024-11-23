@@ -2,9 +2,7 @@ package fslocal
 
 import (
 	"fmt"
-	"os"
-
-	"github.com/bmatcuk/doublestar/v4"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 )
 
 // FS represents a local file system
@@ -17,7 +15,7 @@ type FS struct {
 
 // Init verifies that configured Pattern is correct
 func (fs *FS) Init() error {
-	_, err := doublestar.FilepathGlob(fs.Pattern)
+	_, err := fsproxy.Glob(fs.Pattern)
 	return err
 }
 
@@ -28,7 +26,7 @@ func (fs *FS) String() string {
 
 // List returns the list of file names which will be read via Read fn
 func (fs *FS) List() ([]string, error) {
-	matches, err := doublestar.FilepathGlob(fs.Pattern)
+	matches, err := fsproxy.Glob(fs.Pattern)
 	if err != nil {
 		return nil, fmt.Errorf("error while matching files via pattern %s: %w", fs.Pattern, err)
 	}
@@ -40,7 +38,7 @@ func (fs *FS) List() ([]string, error) {
 func (fs *FS) Read(files []string) (map[string][]byte, error) {
 	result := make(map[string][]byte)
 	for _, path := range files {
-		data, err := os.ReadFile(path)
+		data, err := fsproxy.ReadFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("error while reading file %q: %w", path, err)
 		}

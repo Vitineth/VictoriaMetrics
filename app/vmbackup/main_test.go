@@ -1,7 +1,6 @@
 package main
 
 import (
-	"path/filepath"
 	"testing"
 )
 
@@ -15,7 +14,7 @@ func TestHasFilepathPrefix(t *testing.T) {
 		}
 	}
 
-	pwd, err := filepath.Abs("")
+	pwd, err := fsproxy.Abs("")
 	if err != nil {
 		t.Fatalf("cannot determine working directory: %s", err)
 	}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"io"
 	"io/fs"
 	"net/http"
@@ -212,7 +213,7 @@ func pushToHistory(rl *readline.Instance, historyLines []string, s string) []str
 }
 
 func loadFromHistory(filePath string) ([]string, error) {
-	data, err := os.ReadFile(filePath)
+	data, err := fsproxy.ReadFile(filePath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, nil
@@ -243,7 +244,7 @@ func saveToHistory(filePath string, lines []string) error {
 		linesQuoted[i] = lineQuoted
 	}
 	data := strings.Join(linesQuoted, "\n")
-	return os.WriteFile(filePath, []byte(data), 0600)
+	return fsproxy.WriteFile(filePath, []byte(data), 0600)
 }
 
 func isQuitCommand(s string) bool {

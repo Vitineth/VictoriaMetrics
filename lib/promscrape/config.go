@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"net/url"
 	"path/filepath"
 	"slices"
@@ -465,7 +466,7 @@ func loadScrapeConfigFiles(baseDir string, scrapeConfigFiles []string, isStrict 
 		filePath := fscore.GetFilepath(baseDir, filePath)
 		paths := []string{filePath}
 		if strings.Contains(filePath, "*") {
-			ps, err := filepath.Glob(filePath)
+			ps, err := fsproxy.Glob(filePath)
 			if err != nil {
 				logger.Errorf("skipping pattern %q at `scrape_config_files` because of error: %s", filePath, err)
 				continue
@@ -512,7 +513,7 @@ func (cfg *Config) parseData(data []byte, path string) error {
 		cfg.ScrapeConfigs = nil
 		return fmt.Errorf("cannot unmarshal data: %w", err)
 	}
-	absPath, err := filepath.Abs(path)
+	absPath, err := fsproxy.Abs(path)
 	if err != nil {
 		cfg.ScrapeConfigs = nil
 		return fmt.Errorf("cannot obtain abs path for %q: %w", path, err)
@@ -1064,7 +1065,7 @@ func (sdc *FileSDConfig) appendScrapeWork(dst []*ScrapeWork, baseDir string, swc
 		paths := []string{pathPattern}
 		if strings.Contains(pathPattern, "*") {
 			var err error
-			paths, err = filepath.Glob(pathPattern)
+			paths, err = fsproxy.Glob(pathPattern)
 			if err != nil {
 				// Do not return this error, since other files may contain valid scrape configs.
 				logger.Errorf("skipping entry %q in `file_sd_config->files` for job_name=%s because of error: %s", file, swc.jobName, err)

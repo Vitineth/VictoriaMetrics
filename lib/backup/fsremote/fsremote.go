@@ -2,6 +2,7 @@ package fsremote
 
 import (
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"io"
 	"os"
 	"path/filepath"
@@ -218,7 +219,7 @@ func (fs *FS) CreateFile(filePath string, data []byte) error {
 	if err := fs.mkdirAll(path); err != nil {
 		return err
 	}
-	if err := os.WriteFile(path, data, 0600); err != nil {
+	if err := fsproxy.WriteFile(path, data, 0600); err != nil {
 		return fmt.Errorf("cannot write %d bytes to %q: %w", len(data), path, err)
 	}
 	return nil
@@ -243,5 +244,5 @@ func (fs *FS) HasFile(filePath string) (bool, error) {
 // ReadFile returns the content of filePath at fs.
 func (fs *FS) ReadFile(filePath string) ([]byte, error) {
 	path := filepath.Join(fs.Dir, filePath)
-	return os.ReadFile(path)
+	return fsproxy.ReadFile(path)
 }

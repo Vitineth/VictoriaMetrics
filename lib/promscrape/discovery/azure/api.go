@@ -3,6 +3,7 @@ package azure
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"io"
 	"net/http"
 	"net/url"
@@ -152,7 +153,7 @@ func getCloudEnvByName(name string) (*cloudEnvironmentEndpoints, error) {
 }
 
 func readCloudEndpointsFromFile(filePath string) (*cloudEnvironmentEndpoints, error) {
-	data, err := os.ReadFile(filePath)
+	data, err := fsproxy.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot file %q: %w", filePath, err)
 	}

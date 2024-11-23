@@ -609,7 +609,7 @@ func TestConfigHeaders(t *testing.T) {
 func TestTLSConfigWithCertificatesFilesUpdate(t *testing.T) {
 	// Generate and save a self-signed CA certificate and a certificate signed by the CA
 	caPEM, certPEM, keyPEM := mustGenerateCertificates()
-	_ = os.WriteFile("testdata/ca.pem", caPEM, 0644)
+	_ = fsproxy.WriteFile("testdata/ca.pem", caPEM, 0644)
 
 	defer func() {
 		_ = os.Remove("testdata/ca.pem")
@@ -660,7 +660,7 @@ func TestTLSConfigWithCertificatesFilesUpdate(t *testing.T) {
 
 	// Update CA file with new CA and get config
 	ca2PEM, _, _ := mustGenerateCertificates()
-	_ = os.WriteFile("testdata/ca.pem", ca2PEM, 0644)
+	_ = fsproxy.WriteFile("testdata/ca.pem", ca2PEM, 0644)
 
 	// Wait for cert cache expiration
 	time.Sleep(2 * time.Second)

@@ -1,7 +1,6 @@
 package flagutil
 
 import (
-	"path/filepath"
 	"testing"
 )
 
@@ -48,7 +47,7 @@ func TestPassword(t *testing.T) {
 
 	// read the password from file by absolute path
 	var err error
-	localPassFile, err = filepath.Abs("testdata/password.txt")
+	localPassFile, err = fsproxy.Abs("testdata/password.txt")
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
