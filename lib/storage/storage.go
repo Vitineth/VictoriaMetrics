@@ -3,9 +3,11 @@ package storage
 import (
 	"bytes"
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"io"
 	"math"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -69,7 +71,7 @@ type Storage struct {
 	retentionMsecs int64
 
 	// lock file for exclusive access to the storage on the given path.
-	flockF *os.File
+	flockF *fsproxy.ProxyFile
 
 	// idbCurr contains the currently used indexdb.
 	idbCurr atomic.Pointer[indexDB]
@@ -166,26 +168,28 @@ type Storage struct {
 }
 
 // MustOpenStorage opens storage on the given path with the given retentionMsecs.
-func MustOpenStorage(path string, retention time.Duration, maxHourlySeries, maxDailySeries int) *Storage {
-	path, err := filepath.Abs(path)
+func MustOpenStorage(path2 string, retention time.Duration, maxHourlySeries, maxDailySeries int) *Storage {
+	//path, err := fsproxy.Abs(path)
+	println("This is not building right")
+	path2, err := fsproxy.Abs(path2)
 	if err != nil {
-		logger.Panicf("FATAL: cannot determine absolute path for %q: %s", path, err)
+		logger.Panicf("FATAL: cannot determine absolute path for %q: %s", path2, err)
 	}
 	if retention <= 0 || retention > retentionMax {
 		retention = retentionMax
 	}
 	s := &Storage{
-		path:           path,
-		cachePath:      filepath.Join(path, cacheDirname),
+		path:           path2,
+		cachePath:      path.Join(path2, cacheDirname),
 		retentionMsecs: retention.Milliseconds(),
 		stopCh:         make(chan struct{}),
 	}
-	fs.MustMkdirIfNotExist(path)
+	fs.MustMkdirIfNotExist(path2)
 
 	// Check whether the cache directory must be removed
 	// It is removed if it contains resetCacheOnStartupFilename.
 	// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/1447 for details.
-	if fs.IsPathExist(filepath.Join(s.cachePath, resetCacheOnStartupFilename)) {
+	if fs.IsPathExist(path.Join(s.cachePath, resetCacheOnStartupFilename)) {
 		logger.Infof("removing cache directory at %q, since it contains `%s` file...", s.cachePath, resetCacheOnStartupFilename)
 		// Do not use fs.MustRemoveAll() here, since the cache directory may be mounted
 		// to a separate filesystem. In this case the fs.MustRemoveAll() will fail while
@@ -195,16 +199,16 @@ func MustOpenStorage(path string, retention time.Duration, maxHourlySeries, maxD
 	}
 
 	// Protect from concurrent opens.
-	s.flockF = fs.MustCreateFlockFile(path)
+	s.flockF = fs.MustCreateFlockFile(path2)
 
 	// Check whether restore process finished successfully
-	restoreLockF := filepath.Join(path, backupnames.RestoreInProgressFilename)
+	restoreLockF := path.Join(path2, backupnames.RestoreInProgressFilename)
 	if fs.IsPathExist(restoreLockF) {
 		logger.Panicf("FATAL: incomplete vmrestore run; run vmrestore again or remove lock file %q", restoreLockF)
 	}
 
 	// Pre-create snapshots directory if it is missing.
-	snapshotsPath := filepath.Join(path, snapshotsDirname)
+	snapshotsPath := path.Join(path2, snapshotsDirname)
 	fs.MustMkdirIfNotExist(snapshotsPath)
 	fs.MustRemoveTemporaryDirs(snapshotsPath)
 
@@ -235,14 +239,14 @@ func MustOpenStorage(path string, retention time.Duration, maxHourlySeries, maxD
 	s.prefetchedMetricIDs = &uint64set.Set{}
 
 	// Load metadata
-	metadataDir := filepath.Join(path, metadataDirname)
-	isEmptyDB := !fs.IsPathExist(filepath.Join(path, indexdbDirname))
+	metadataDir := path.Join(path2, metadataDirname)
+	isEmptyDB := !fs.IsPathExist(path.Join(path2, indexdbDirname))
 	fs.MustMkdirIfNotExist(metadataDir)
 	s.minTimestampForCompositeIndex = mustGetMinTimestampForCompositeIndex(metadataDir, isEmptyDB)
 
 	// Load indexdb
-	idbPath := filepath.Join(path, indexdbDirname)
-	idbSnapshotsPath := filepath.Join(idbPath, snapshotsDirname)
+	idbPath := path.Join(path2, indexdbDirname)
+	idbSnapshotsPath := path.Join(idbPath, snapshotsDirname)
 	fs.MustMkdirIfNotExist(idbSnapshotsPath)
 	fs.MustRemoveTemporaryDirs(idbSnapshotsPath)
 	idbNext, idbCurr, idbPrev := s.mustOpenIndexDBTables(idbPath)
@@ -267,11 +271,11 @@ func MustOpenStorage(path string, retention time.Duration, maxHourlySeries, maxD
 	// Load deleted metricIDs from idbCurr and idbPrev
 	dmisCurr, err := idbCurr.loadDeletedMetricIDs()
 	if err != nil {
-		logger.Panicf("FATAL: cannot load deleted metricIDs for the current indexDB at %q: %s", path, err)
+		logger.Panicf("FATAL: cannot load deleted metricIDs for the current indexDB at %q: %s", path2, err)
 	}
 	dmisPrev, err := idbPrev.loadDeletedMetricIDs()
 	if err != nil {
-		logger.Panicf("FATAL: cannot load deleted metricIDs for the previous indexDB at %q: %s", path, err)
+		logger.Panicf("FATAL: cannot load deleted metricIDs for the previous indexDB at %q: %s", path2, err)
 	}
 	s.setDeletedMetricIDs(dmisCurr)
 	s.updateDeletedMetricIDs(dmisPrev)
@@ -281,7 +285,7 @@ func MustOpenStorage(path string, retention time.Duration, maxHourlySeries, maxD
 	s.startFreeDiskSpaceWatcher()
 
 	// Load data
-	tablePath := filepath.Join(path, dataDirname)
+	tablePath := path.Join(path2, dataDirname)
 	tb := mustOpenTable(tablePath, s)
 	s.tb = tb
 
@@ -416,7 +420,7 @@ func (s *Storage) mustGetSnapshotsCount() int {
 // ListSnapshots returns sorted list of existing snapshots for s.
 func (s *Storage) ListSnapshots() ([]string, error) {
 	snapshotsPath := filepath.Join(s.path, snapshotsDirname)
-	d, err := os.Open(snapshotsPath)
+	d, err := fsproxy.Open(snapshotsPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open snapshots directory: %w", err)
 	}
@@ -912,16 +916,16 @@ func (s *Storage) mustLoadNextDayMetricIDs(generation, date uint64) *byDateMetri
 		},
 	}
 	name := "next_day_metric_ids_v2"
-	path := filepath.Join(s.cachePath, name)
-	if !fs.IsPathExist(path) {
+	path2 := path.Join(s.cachePath, name)
+	if !fs.IsPathExist(path2) {
 		return e
 	}
-	src, err := os.ReadFile(path)
+	src, err := fsproxy.ReadFile(path2)
 	if err != nil {
-		logger.Panicf("FATAL: cannot read %s: %s", path, err)
+		logger.Panicf("FATAL: cannot read %s: %s", path2, err)
 	}
 	if len(src) < 24 {
-		logger.Errorf("discarding %s, since it has broken header; got %d bytes; want %d bytes", path, len(src), 24)
+		logger.Errorf("discarding %s, since it has broken header; got %d bytes; want %d bytes", path2, len(src), 24)
 		return e
 	}
 
@@ -929,23 +933,23 @@ func (s *Storage) mustLoadNextDayMetricIDs(generation, date uint64) *byDateMetri
 	generationLoaded := encoding.UnmarshalUint64(src)
 	src = src[8:]
 	if generationLoaded != generation {
-		logger.Infof("discarding %s, since it contains data for stale generation; got %d; want %d", path, generationLoaded, generation)
+		logger.Infof("discarding %s, since it contains data for stale generation; got %d; want %d", path2, generationLoaded, generation)
 	}
 	dateLoaded := encoding.UnmarshalUint64(src)
 	src = src[8:]
 	if dateLoaded != date {
-		logger.Infof("discarding %s, since it contains data for stale date; got %d; want %d", path, dateLoaded, date)
+		logger.Infof("discarding %s, since it contains data for stale date; got %d; want %d", path2, dateLoaded, date)
 		return e
 	}
 
 	// Unmarshal uint64set
 	m, tail, err := unmarshalUint64Set(src)
 	if err != nil {
-		logger.Infof("discarding %s because cannot load uint64set: %s", path, err)
+		logger.Infof("discarding %s because cannot load uint64set: %s", path2, err)
 		return e
 	}
 	if len(tail) > 0 {
-		logger.Infof("discarding %s because non-empty tail left; len(tail)=%d", path, len(tail))
+		logger.Infof("discarding %s because non-empty tail left; len(tail)=%d", path2, len(tail))
 		return e
 	}
 	e.v = *m
@@ -956,16 +960,16 @@ func (s *Storage) mustLoadHourMetricIDs(hour uint64, name string) *hourMetricIDs
 	hm := &hourMetricIDs{
 		hour: hour,
 	}
-	path := filepath.Join(s.cachePath, name)
-	if !fs.IsPathExist(path) {
+	path2 := path.Join(s.cachePath, name)
+	if !fs.IsPathExist(path2) {
 		return hm
 	}
-	src, err := os.ReadFile(path)
+	src, err := fsproxy.ReadFile(path2)
 	if err != nil {
-		logger.Panicf("FATAL: cannot read %s: %s", path, err)
+		logger.Panicf("FATAL: cannot read %s: %s", path2, err)
 	}
 	if len(src) < 16 {
-		logger.Errorf("discarding %s, since it has broken header; got %d bytes; want %d bytes", path, len(src), 16)
+		logger.Errorf("discarding %s, since it has broken header; got %d bytes; want %d bytes", path2, len(src), 16)
 		return hm
 	}
 
@@ -973,18 +977,18 @@ func (s *Storage) mustLoadHourMetricIDs(hour uint64, name string) *hourMetricIDs
 	hourLoaded := encoding.UnmarshalUint64(src)
 	src = src[8:]
 	if hourLoaded != hour {
-		logger.Infof("discarding %s, since it contains outdated hour; got %d; want %d", path, hourLoaded, hour)
+		logger.Infof("discarding %s, since it contains outdated hour; got %d; want %d", path2, hourLoaded, hour)
 		return hm
 	}
 
 	// Unmarshal uint64set
 	m, tail, err := unmarshalUint64Set(src)
 	if err != nil {
-		logger.Infof("discarding %s because cannot load uint64set: %s", path, err)
+		logger.Infof("discarding %s because cannot load uint64set: %s", path2, err)
 		return hm
 	}
 	if len(tail) > 0 {
-		logger.Infof("discarding %s because non-empty tail left; len(tail)=%d", path, len(tail))
+		logger.Infof("discarding %s because non-empty tail left; len(tail)=%d", path2, len(tail))
 		return hm
 	}
 	hm.m = m
@@ -993,7 +997,7 @@ func (s *Storage) mustLoadHourMetricIDs(hour uint64, name string) *hourMetricIDs
 
 func (s *Storage) mustSaveNextDayMetricIDs(e *byDateMetricIDEntry) {
 	name := "next_day_metric_ids_v2"
-	path := filepath.Join(s.cachePath, name)
+	path2 := path.Join(s.cachePath, name)
 	dst := make([]byte, 0, e.v.Len()*8+16)
 
 	// Marshal header
@@ -1003,13 +1007,13 @@ func (s *Storage) mustSaveNextDayMetricIDs(e *byDateMetricIDEntry) {
 	// Marshal e.v
 	dst = marshalUint64Set(dst, &e.v)
 
-	if err := os.WriteFile(path, dst, 0644); err != nil {
-		logger.Panicf("FATAL: cannot write %d bytes to %q: %s", len(dst), path, err)
+	if err := fsproxy.WriteFile(path2, dst, 0644); err != nil {
+		logger.Panicf("FATAL: cannot write %d bytes to %q: %s", len(dst), path2, err)
 	}
 }
 
 func (s *Storage) mustSaveHourMetricIDs(hm *hourMetricIDs, name string) {
-	path := filepath.Join(s.cachePath, name)
+	path2 := path.Join(s.cachePath, name)
 	dst := make([]byte, 0, hm.m.Len()*8+24)
 
 	// Marshal header
@@ -1018,8 +1022,8 @@ func (s *Storage) mustSaveHourMetricIDs(hm *hourMetricIDs, name string) {
 	// Marshal hm.m
 	dst = marshalUint64Set(dst, hm.m)
 
-	if err := os.WriteFile(path, dst, 0644); err != nil {
-		logger.Panicf("FATAL: cannot write %d bytes to %q: %s", len(dst), path, err)
+	if err := fsproxy.WriteFile(path2, dst, 0644); err != nil {
+		logger.Panicf("FATAL: cannot write %d bytes to %q: %s", len(dst), path2, err)
 	}
 }
 
@@ -1050,8 +1054,8 @@ func marshalUint64Set(dst []byte, m *uint64set.Set) []byte {
 }
 
 func mustGetMinTimestampForCompositeIndex(metadataDir string, isEmptyDB bool) int64 {
-	path := filepath.Join(metadataDir, "minTimestampForCompositeIndex")
-	minTimestamp, err := loadMinTimestampForCompositeIndex(path)
+	path2 := path.Join(metadataDir, "minTimestampForCompositeIndex")
+	minTimestamp, err := loadMinTimestampForCompositeIndex(path2)
 	if err == nil {
 		return minTimestamp
 	}
@@ -1068,12 +1072,12 @@ func mustGetMinTimestampForCompositeIndex(metadataDir string, isEmptyDB bool) in
 	}
 	minTimestamp = date * msecPerDay
 	dateBuf := encoding.MarshalInt64(nil, minTimestamp)
-	fs.MustWriteAtomic(path, dateBuf, true)
+	fs.MustWriteAtomic(path2, dateBuf, true)
 	return minTimestamp
 }
 
 func loadMinTimestampForCompositeIndex(path string) (int64, error) {
-	data, err := os.ReadFile(path)
+	data, err := fsproxy.ReadFile(path)
 	if err != nil {
 		return 0, err
 	}
@@ -1084,17 +1088,17 @@ func loadMinTimestampForCompositeIndex(path string) (int64, error) {
 }
 
 func (s *Storage) mustLoadCache(name string, sizeBytes int) *workingsetcache.Cache {
-	path := filepath.Join(s.cachePath, name)
-	return workingsetcache.Load(path, sizeBytes)
+	path2 := path.Join(s.cachePath, name)
+	return workingsetcache.Load(path2, sizeBytes)
 }
 
 func (s *Storage) mustSaveCache(c *workingsetcache.Cache, name string) {
 	saveCacheLock.Lock()
 	defer saveCacheLock.Unlock()
 
-	path := filepath.Join(s.cachePath, name)
-	if err := c.Save(path); err != nil {
-		logger.Panicf("FATAL: cannot save cache to %q: %s", path, err)
+	path2 := path.Join(s.cachePath, name)
+	if err := c.Save(path2); err != nil {
+		logger.Panicf("FATAL: cannot save cache to %q: %s", path2, err)
 	}
 }
 
