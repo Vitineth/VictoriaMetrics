@@ -113,7 +113,7 @@ github.com/AzureAD/microsoft-authentication-library-for-go/apps/public
 # github.com/VictoriaMetrics/easyproto v0.1.4
 ## explicit; go 1.18
 github.com/VictoriaMetrics/easyproto
-# github.com/VictoriaMetrics/fastcache v1.12.2
+# github.com/VictoriaMetrics/fastcache v1.12.2 => github.com/vitineth/fastcache v0.0.0-20241107161519-00ed48f12882
 ## explicit; go 1.13
 github.com/VictoriaMetrics/fastcache
 # github.com/VictoriaMetrics/metrics v1.35.1
@@ -310,9 +310,6 @@ github.com/bboreham/go-loser
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
-# github.com/bmatcuk/doublestar/v4 v4.6.1
-## explicit; go 1.16
-github.com/bmatcuk/doublestar/v4
 # github.com/cespare/xxhash/v2 v2.3.0
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
@@ -423,6 +420,13 @@ github.com/googleapis/gax-go/v2/internal
 ## explicit; go 1.21
 github.com/grafana/regexp
 github.com/grafana/regexp/syntax
+# github.com/hack-pad/hackpadfs v0.2.4
+## explicit; go 1.19
+github.com/hack-pad/hackpadfs
+github.com/hack-pad/hackpadfs/keyvalue
+github.com/hack-pad/hackpadfs/keyvalue/blob
+github.com/hack-pad/hackpadfs/mem
+github.com/hack-pad/hackpadfs/os
 # github.com/influxdata/influxdb v1.11.6
 ## explicit; go 1.21
 github.com/influxdata/influxdb/client/v2
@@ -479,6 +483,12 @@ github.com/munnerz/goautoneg
 # github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f
 ## explicit
 github.com/mwitkow/go-conntrack
+# github.com/nlepage/go-js-promise v1.0.0
+## explicit; go 1.12
+github.com/nlepage/go-js-promise
+# github.com/nlepage/go-wasm-http-server v1.1.0
+## explicit; go 1.13
+github.com/nlepage/go-wasm-http-server
 # github.com/oklog/ulid v1.3.1
 ## explicit
 github.com/oklog/ulid
@@ -902,3 +912,4 @@ k8s.io/klog/v2/internal/sloghandler
 # k8s.io/utils v0.0.0-20240921022957-49e7df575cb6
 ## explicit; go 1.18
 k8s.io/utils/clock
+# github.com/VictoriaMetrics/fastcache => github.com/vitineth/fastcache v0.0.0-20241107161519-00ed48f12882
