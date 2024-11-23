@@ -21,7 +21,7 @@ func (rr ResponseRecorder) JSResponse() js.Value {
 	var res = rr.Result()
 
 	var body js.Value = js.Undefined()
-	if res.ContentLength != 0 {
+	if res.ContentLength > 0 {
 		var b, err = ioutil.ReadAll(res.Body)
 		if err != nil {
 			panic(err)
