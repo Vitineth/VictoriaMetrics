@@ -15,17 +15,19 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.38
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.24
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.63.2
-	github.com/bmatcuk/doublestar/v4 v4.6.1
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/cheggaaa/pb/v3 v3.1.5
 	github.com/ergochat/readline v0.1.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/google/go-cmp v0.6.0
+	github.com/google/uuid v1.6.0
 	github.com/googleapis/gax-go/v2 v2.13.0
+	github.com/hack-pad/hackpadfs v0.2.4
 	github.com/influxdata/influxdb v1.11.6
 	github.com/klauspost/compress v1.17.10
 	github.com/mattn/go-isatty v0.0.20
+	github.com/nlepage/go-wasm-http-server v1.1.0
 	github.com/prometheus/prometheus v0.54.1
 	github.com/urfave/cli/v2 v2.27.4
 	github.com/valyala/fastjson v1.6.4
@@ -81,7 +83,6 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/s2a-go v0.1.8 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
@@ -94,6 +95,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
+	github.com/nlepage/go-js-promise v1.0.0 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -134,3 +136,5 @@ require (
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6 // indirect
 )
+
+replace github.com/VictoriaMetrics/fastcache => github.com/vitineth/fastcache v0.0.0-20241107161519-00ed48f12882
