@@ -21,6 +21,9 @@ victoria-metrics-linux-arm-prod:
 victoria-metrics-linux-arm64-prod:
 	APP_NAME=victoria-metrics $(MAKE) app-via-docker-linux-arm64
 
+victoria-metrics-js-wasm-prod:
+	APP_NAME=victoria-metrics $(MAKE) app-via-docker-js-wasm
+
 victoria-metrics-linux-ppc64le-prod:
 	APP_NAME=victoria-metrics $(MAKE) app-via-docker-linux-ppc64le
 

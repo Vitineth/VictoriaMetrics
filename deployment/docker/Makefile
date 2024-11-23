@@ -129,6 +129,9 @@ app-via-docker-linux-arm64:
 	EXTRA_DOCKER_ENVS='CC=/opt/cross-builder/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc' \
 	CGO_ENABLED=1 GOOS=linux GOARCH=arm64 $(MAKE) app-via-docker-goos-goarch
 
+app-via-docker-js-wasm:
+	CGO_ENABLED=0 GOOS=js GOARCH=wasm $(MAKE) app-via-docker-goos-goarch
+
 app-via-docker-linux-arm:
 	EXTRA_DOCKER_ENVS='GOARM=5' \
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm $(MAKE) app-via-docker-goos-goarch
