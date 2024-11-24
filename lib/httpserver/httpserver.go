@@ -61,13 +61,18 @@ var (
 )
 
 var (
-	servers     = make(map[string]*server)
+	servers     = make(map[string]simpleServer)
 	serversLock sync.Mutex
 )
 
 type server struct {
 	shutdownDelayDeadline atomic.Int64
 	s                     *http.Server
+}
+
+type simpleServer interface {
+	ShutdownDelayDeadline() *atomic.Int64
+	Stop(c context.Context) error
 }
 
 // RequestHandler must serve the given request r and write response to w.
@@ -154,7 +159,7 @@ func stop(addr string) error {
 	}
 
 	deadline := time.Now().Add(*shutdownDelay).UnixNano()
-	s.shutdownDelayDeadline.Store(deadline)
+	s.ShutdownDelayDeadline().Store(deadline)
 	if *shutdownDelay > 0 {
 		// Sleep for a while until load balancer in front of the server
 		// notifies that "/health" endpoint returns non-OK responses.
@@ -166,14 +171,14 @@ func stop(addr string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), *maxGracefulShutdownDuration)
 	defer cancel()
-	if err := s.s.Shutdown(ctx); err != nil {
+	if err := s.Stop(ctx); err != nil {
 		return fmt.Errorf("cannot gracefully shutdown http server at %q in %.3fs; "+
 			"probably, `-http.maxGracefulShutdownDuration` command-line flag value must be increased; error: %s", addr, maxGracefulShutdownDuration.Seconds(), err)
 	}
 	return nil
 }
 
-func gzipHandler(s *server, rh RequestHandler) http.HandlerFunc {
+func gzipHandler(s simpleServer, rh RequestHandler) http.HandlerFunc {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerWrapper(s, w, r, rh)
 	})
@@ -207,7 +212,7 @@ var hostname = func() string {
 	return h
 }()
 
-func handlerWrapper(s *server, w http.ResponseWriter, r *http.Request, rh RequestHandler) {
+func handlerWrapper(s simpleServer, w http.ResponseWriter, r *http.Request, rh RequestHandler) {
 	// All the VictoriaMetrics code assumes that panic stops the process.
 	// Unfortunately, the standard net/http.Server recovers from panics in request handlers,
 	// so VictoriaMetrics state can become inconsistent after the recovered panic.
@@ -268,7 +273,7 @@ func handlerWrapper(s *server, w http.ResponseWriter, r *http.Request, rh Reques
 	switch r.URL.Path {
 	case "/health":
 		h.Set("Content-Type", "text/plain; charset=utf-8")
-		deadline := s.shutdownDelayDeadline.Load()
+		deadline := s.ShutdownDelayDeadline().Load()
 		if deadline <= 0 {
 			w.Write([]byte("OK"))
 			return

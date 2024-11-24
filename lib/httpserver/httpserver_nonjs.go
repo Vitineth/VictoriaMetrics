@@ -11,8 +11,22 @@ import (
 	"github.com/valyala/fastrand"
 	"net"
 	"net/http"
+	"sync/atomic"
 	"time"
 )
+
+type serverWrapper struct {
+	shutdownDelayDeadline *atomic.Int64
+	s                     *http.Server
+}
+
+func (s serverWrapper) Stop(ctx context.Context) error {
+	return s.s.Shutdown(ctx)
+}
+
+func (s serverWrapper) ShutdownDelayDeadline() *atomic.Int64 {
+	return s.shutdownDelayDeadline
+}
 
 func serve(addr string, useProxyProtocol bool, rh RequestHandler, idx int) {
 	scheme := "http"
@@ -41,7 +55,7 @@ func serve(addr string, useProxyProtocol bool, rh RequestHandler, idx int) {
 }
 
 func serveWithListener(addr string, ln net.Listener, rh RequestHandler) {
-	var s server
+	var s serverWrapper
 	s.s = &http.Server{
 		Handler: gzipHandler(&s, rh),
 
