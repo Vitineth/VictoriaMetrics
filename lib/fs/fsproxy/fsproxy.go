@@ -46,20 +46,21 @@ func MkdirAll(path string, perm hackpadfs.FileMode) error {
 func WriteFile(name string, data []byte, perm os.FileMode) error {
 	initFs()
 	slog.Info("write file", "name", fixPath(name))
-	file, err := hackpadfs.OpenFile(fileSystem, fixPath(name), os.O_CREATE|os.O_WRONLY, perm)
-	if err != nil {
-		return err
-	}
-	_, err = hackpadfs.WriteFile(file, data)
-	if err != nil {
-		return err
-	}
-	err = file.Close()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return hackpadfs.WriteFullFile(fileSystem, fixPath(name), data, perm)
+	//file, err := hackpadfs.OpenFile(fileSystem, fixPath(name), os.O_CREATE|os.O_WRONLY, perm)
+	//if err != nil {
+	//	return err
+	//}
+	//_, err = hackpadfs.WriteFile(file, data)
+	//if err != nil {
+	//	return err
+	//}
+	//err = file.Close()
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//return nil
 }
 
 type ProxyFile struct {
