@@ -2,6 +2,7 @@ package cgroup
 
 import (
 	"fmt"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/fs/fsproxy"
 	"path"
 	"strconv"
 	"strings"
