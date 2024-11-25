@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!--  <script src="./wasm_exec.js"></script>-->
+</head>
+<body>
+<h1>
+    VictoriaMetrics in the Browser
+</h1>
+<p>
+    This is a really dumb project but should run an entire VictoriaMetrics single node instance in the browser via WASM.
+    You can use the controls below to interact with it. This has been tested very little so it is likely to crash and
+    fail in weird ways - let Ryan know what you find out while experimenting.
+</p>
+<p>
+    If you hit Import Data, you'll import a 6.5M file of JSON encoded metrics from my local victoriametrics cluster I
+    run in my homelab. <strong>It can take up to 30 seconds for data to be properly imported after you see the success
+    message, it still needs to be processed by VictoriaMetrics ready to query</strong> This contains the following
+    metrics
+</p>
+<ul>
+    <li>helios_dns_query_duration_bucket</li>
+    <li>helios_dns_lookup</li>
+    <li>temperature</li>
+    <li>humidity</li>
+    <li>helios_dns_failed_lookup</li>
+    <li>printer_temperature</li>
+    <li>printer_target</li>
+    <li>helios_dns_query_duration_count</li>
+    <li>helios_dns_empty_lookup</li>
+    <li>helios_dns_query_duration_sum</li>
+    <li>soil_moisture</li>
+</ul>
+<p>All data is within the time range of <code>2024-11-24T00:00</code> to <code>2024-11-24T22:30</code>. All queries are
+    range queries right now. If you want to experiment with the server more, you can jump into the Dev Tools console and
+    access the server via <code>fetch()</code>. Use the normal single node paths but prefixed with <code>/victoria-metrics</code>,
+    so if you wanted the query endpoint available in the single node version at <code>/prometheus/api/v1/query?query=metric</code>
+    you'd want to use <code>fetch('/victoria-metrics/prometheus/api/v1/query?query=metric')</code></p>
+<p>If you're wondering why I did this - there's no good reason. This should never, ever be used and I cannot think of a
+    single good reason this was actually made other than curiosity. As for the tech, this uses a normal go build with
+    <code>GOOS=js GOARCH=wasm</code>, the entire file system of VictoriaMetrics has been ripped out and replaced with a
+    proxy in the form of <code>hackpadfs</code>, when compiled under JS it uses the <code>mem</code> engine which uses
+    an in memory key value store. When compiled for anything else it uses the <code>os</code> engine which passes calls
+    to the underlying OS. This likely has major performance impacts though, I have not tested it. This also means that
+    no data is persisted between sessions</p>
+<div>VictoriaMetrics Status: <span id="status">Stopped</span>
+    <button id="terminate">Terminate</button>
+</div>
+<div id="tools" style="display: none">
+    <div>Import Status: <span id="import">Stopped</span>
+        <button id="import-button">Import Data</button>
+    </div>
+    <div>Run Query:
+        <form id="form">
+            <input id="query"/>
+            <input id="range-start" type="datetime-local" min="2024-11-24T00:00" max="2024-11-24T22:30"
+                   value="2024-11-24T05:00">
+            <input id="range-end" type="datetime-local" min="2024-11-24T00:00" max="2024-11-24T22:30"
+                   value="2024-11-24T09:00">
+            <button type="submit" id="submit">Run Range Query</button>
+        </form>
+    </div>
+    <div id="chart-target"></div>
+    <canvas id="chart" style="width: 90vw; aspect-ratio: 2/1"></canvas>
+</div>
+<script>
+    function makeChart(data) {
+        console.log(data);
+
+        const element = document.createElement('canvas');
+        element.id = 'chart';
+        document.querySelector('#chart-target').innerHTML = '';
+        document.querySelector('#chart-target').append(element);
+
+        const processedData = data.data.resultType === 'matrix' ? (
+            data.data.result.map((e) => ({
+                label: JSON.stringify(e.metric),
+                data: e.values.map((e) => ({x: e[0], y: Number(e[1])})),
+            }))) : (
+            data.data.result.map((e) => ({
+                label: JSON.stringify(e.metric),
+                data: {x: e.value[0], y: e.value[1]},
+            }))
+        )
+
+        const chartData = {
+            datasets: processedData
+        };
+
+        console.log(chartData);
+
+        new Chart(element, {
+            type: 'scatter',
+            data: chartData,
+        });
+    }
+
+    navigator.serviceWorker.register('/sw.js');
+    navigator.serviceWorker.ready.then((registration) => {
+        navigator.serviceWorker.addEventListener('message', (m) => {
+            const data = JSON.parse(m.data);
+            if (data.type === 'status') {
+                document.querySelector('#status').innerText = data.status;
+                document.querySelector('#terminate').style.display = data.status === 'Running' ? 'inline' : 'none';
+                document.querySelector('#tools').style.display = data.status === 'Running' ? 'block' : 'none';
+            }
+        })
+
+        console.log('Service worker is ready!');
+        registration.active.postMessage('launch');
+
+        document.querySelector('#terminate').addEventListener('click', () => {
+            registration.active.postMessage('terminate');
+        });
+        document.querySelector('#import-button').addEventListener('click', () => {
+            importData()
+                .then((r) => {
+                    document.querySelector('#import-button').style.display = 'none';
+                    if (r.status === 204) {
+                        document.querySelector('#import').innerText = 'Imported Successfully';
+                    } else {
+                        document.querySelector('#import').innerText = 'Failed with status ' + r.status + ' ' + r.statusText;
+                    }
+                })
+                .catch((e) => {
+                    document.querySelector('#import-button').style.display = 'none';
+                    document.querySelector('#import').innerText = 'Imported failed: ' + (e.message ?? 'Unknown error');
+                });
+        });
+        document.querySelector('#form').addEventListener('submit', (e) => {
+            console.log(e);
+            e.preventDefault();
+
+            const query = document.querySelector('#query').value;
+            const start = new Date(document.querySelector('#range-start').value);
+            const end = new Date(document.querySelector('#range-end').value);
+
+            runQueryRange(query, start, end).then(makeChart).catch((e) => alert('Failed to run query: ' + e.message ?? 'Unknown error'));
+        })
+    })
+
+    async function importData() {
+        return fetch('/vmdata2.json')
+            .then((d) => d.text())
+            .then((d) => {
+                return fetch('/victoria-metrics/api/v1/import', {
+                    method: 'POST',
+                    body: d,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+            });
+    }
+
+    /**
+     * @param {string} expr
+     * @returns {Promise<any>}
+     */
+    async function runQueryInstant(expr) {
+        const params = new URLSearchParams();
+        params.set('query', expr);
+        return fetch('/victoria-metrics/prometheus/api/v1/query?' + params.toString()).then((d) => d.json());
+    }
+
+    /**
+     * @param {string} expr
+     * @param {Date} start
+     * @param {Date} end
+     * @param {number} stepSeconds
+     * @returns {Promise<any>}
+     */
+    async function runQueryRange(expr, start, end, stepSeconds = 60) {
+        const data = new FormData();
+        data.set('query', expr);
+        data.set('start', start.getTime().toString(10))
+        data.set('end', end.getTime().toString(10))
+        data.set('step', stepSeconds.toString(10) + 's')
+        return fetch('/victoria-metrics/prometheus/api/v1/query_range', {
+            method: 'POST',
+            body: data,
+        }).then((d) => d.json());
+    }
+</script>
+</body>
+</html>
